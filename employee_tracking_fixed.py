@@ -132,3 +132,25 @@ class EmployeeTracker:
                 status["absence_duration"]=0
 
             return status
+
+    def upload_video(self,video_file,config):
+        if self.is_running:
+            return {"status":"error", "message":"Tracking is already running"}
+
+        try:
+            filename=secure_filename(video_file.filename)
+            file_path=os.path.join("uploads", f"{int(time.time())}_{filename}")
+            video_file.save(file_path)
+
+            self.log_event(f"Video uploaded: {filename}")
+            self.upload_video_path=file_path
+            self.source_type="upload"
+
+            return self.start_tracking(config)
+
+        except Exception as e:
+            self.log_event(f"Error uploading video: {e}")
+            return {"status":"error", "message":str(e)}
+
+
+    
