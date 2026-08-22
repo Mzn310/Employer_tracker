@@ -153,4 +153,89 @@ class EmployeeTracker:
             return {"status":"error", "message":str(e)}
 
 
+    def start_tracking(self,config):
+        if self.is_running:
+            return {"status":"error", "message":"Tracking is already running"}
+
+        self.source_type=config.get("source_type","webcam")
+
+        if self.source_type=="upload" and self.uploaded_video_path is None:
+            return {"status":"error", "message":"No video uploaded available"}
+        elif self.source_type == "webcam":
+            self.camera_source = config.get("camera_source", 0)
+            if isinstance(self.camera_source, str) and self.camera_source.isdigit():
+                self.camera_source = int(self.camera_source)
+        elif self.source_type == "custom":
+            self.camera_source = config.get("camera_source", "")
+        elif self.source_type in ["gdrive", "s3"]:
+            return {"status": "error", "message": f"{self.source_type} source not yet implemented"}
+
+        self.absence_threshold = float(config.get("absence_threshold", 5))
+        self.confidence_threshold = float(config.get("confidence", 0.5))
+        
+        # Setup area method
+        area_method = config.get("area_method", "auto")
+        
+        # Make sure the model is set up
+        if self.net is None:
+            if not self.setup_model():
+                return {"status": "error", "message": "Failed to set up detection model"}
+        
+        # Open camera to get frame dimensions
+        cap = self._open_camera()
+        if cap is None:
+            return {"status": "error", "message": "Failed to open video source"}
+            
+        ret, frame = cap.read()
+        if not ret:
+            cap.release()
+            return {"status": "error", "message": "Failed to read initial frame"}
+            
+        # Resize frame for consistent processing
+        frame = cv2.resize(frame, (600, int(frame.shape[0] * 600 / frame.shape[1])))
+        height, width = frame.shape[:2]
+
+        if area_method == "manual":
+            # Parse manually specified area
+            try:
+                coords = config.get("manual_coords", "0.1,0.1,0.9,0.9")
+                x1, y1, x2, y2 = map(float, coords.split(','))
+                self.monitor_area = (
+                    int(x1),
+                    int(y1),
+                    int(x2),
+                    int(y2)
+                )
+                self.log_event(f"Using manually specified area: {self.monitor_area}")
+            except:
+                # Default if parsing fails
+                self.monitor_area = (int(width * 0.1), int(height * 0.1), int(width * 0.9), int(height * 0.9))
+                self.log_event("Failed to parse manual coords, using default area")
+        else:
+            # Auto-detect desk area
+            self.monitor_area = self._detect_desk_area(cap)
+            self.log_event(f"Auto-detected desk area: {self.monitor_area}")
+
+         # Release initial camera
+        cap.release()
+        
+        # Reset tracking variables
+        self.employee_present = False
+        self.absence_start_time = None
+        self.absence_logged = False
+        self.last_present_time = time.time()
+        self.frames_processed = 0
+        
+        # Log system start
+        self.log_event(f"Tracking started using {self.source_type} source")
+        
+        # Start tracking thread
+        self.is_running = True
+        self.tracking_thread = threading.Thread(target=self._tracking_loop)
+        self.tracking_thread.daemon = True
+        self.tracking_thread.start()
+        
+        return {"status": "success", "message": "Tracking started"}
+
+
     
