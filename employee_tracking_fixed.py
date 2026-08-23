@@ -7,6 +7,7 @@ import urllib.request
 import threading
 import queue
 import tempfile
+from sympy import re
 from werkzeug.utils import secure_filename
 
 
@@ -36,7 +37,7 @@ class EmployeeTracker:
 
         self.model_dir="yolo_model"
         self.net=None
-        self.ouput_layers=None
+        self.output_layers=None
 
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
@@ -69,9 +70,9 @@ class EmployeeTracker:
             # Get output layer names
             layer_names=self.net.getLayerNames()
             try:
-                self.ouput_layers=[layer_names[i-1] for i in self.net.getUnconnectedOutLayers()]
+                self.output_layers=[layer_names[i-1] for i in self.net.getUnconnectedOutLayers()]
             except:
-                self.ouput_layers=[layer_names[i[0]-1] for i in self.net.getUnconnectedOutLayers()]
+                self.output_layers=[layer_names[i[0]-1] for i in self.net.getUnconnectedOutLayers()]
 
 
             return True
@@ -320,7 +321,7 @@ class EmployeeTracker:
             self.net.setInput(blob)
 
             try:
-                detections=self.net.forward(self.ouput_layers)
+                detections=self.net.forward(self.output_layers)
             except Exception as e:
                 self.log_event(f"Error during detection: {e}")
                 break
@@ -376,3 +377,37 @@ class EmployeeTracker:
         max_y = min(height, int(max_y + 0.1 * height))
         
         desk_area = (min_x, min_y, max_x, max_y)
+
+        return desk_area
+
+    def tracking_loop(self):
+        cap=self.open_camera()
+        if cap is None:
+            self.log_event("Failed to open camera in tracking loop")
+            self.is_running=False
+            return
+        try:
+            last_save_time=time.time()
+
+            video_ended=False
+
+            while self.is_running:
+                ret,frame=cap.read()
+
+                if not ret:
+                    if self.source_type=="upload":
+                        cap.set(cv2.CAP_PROP_POS_FRAMES,0)
+                        ret,frame=cap.read()
+                        if ret:
+                            if not video_ended:
+                                self.log_event("End of video reached")
+                                video_ended=True
+                        else:
+                            self.log_event("Failed to loop video")
+                            break
+                    else:
+                        self.log_event("Failed to read frame")
+                        break
+
+                frame=cv2.resize(frame,(600,int(frame.shape[0]*600/frame.shape[1])))
+                height,width=frame.shape[:2]
