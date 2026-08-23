@@ -300,3 +300,79 @@ class EmployeeTracker:
         except Exception as e:
             self.log_event(f"Error opening camera: {e}")
             return None 
+
+    def detect_desk_area(self, cap):
+        self.log_event("Starting desk area detection...")
+
+        desk_candidates = []
+        frame_count=0
+        max_frames=5
+
+        while frame_count < max_frames:
+            ret,frame=cap.read()
+            if not ret:
+                break
+
+            frame=cv2.resize(frame,(600,int(frame.shape[0]*600/frame.shape[1])))
+            height,width=frame.shape[:2]
+
+            blob=cv2.dnn.blobFromImage(frame,1/255.0,(416,416),swapRB=True,crop=False)
+            self.net.setInput(blob)
+
+            try:
+                detections=self.net.forward(self.ouput_layers)
+            except Exception as e:
+                self.log_event(f"Error during detection: {e}")
+                break
+
+            desks=[]
+
+            for detection in detections:
+                for obj in detection:
+                    scores=obj[5:]
+                    class_id=np.argmax(scores)
+                    confidence=scores[class_id]
+
+                     # COCO class IDs: 0=person, 56=chair, 60=dining table, 62=tv, 63=laptop, 64=mouse, 65=keyboard, 73=book
+                    # We're looking for furniture objects that indicate a desk area
+                    desk_related_classes = [56, 60, 63, 64, 65]
+
+                    if confidence > self.confidence_threshold and class_id in desk_related_classes:
+                        center_x=int(obj[0]*width)
+                        center_y=int(obj[1]*height)
+                        w=int(obj[2]*width)
+                        h=int(obj[3]*height)
+
+                        x=int(center_x - w/2)
+                        y=int(center_y - h/2)
+                        desks.append((x, y, w, h,confidence,class_id))
+
+            if desks:
+                desk_candidates.extend(desks)
+
+            frame_count+=1
+            if self.source_type == "upload":
+                cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+
+            # If we don't have enough desk candidates, use a default area
+        if len(desk_candidates) < 2:
+            self.log_event("Not enough desk objects detected. Using default desk area.")
+            # Default to middle-bottom half of the frame
+            height, width = frame.shape[:2]
+            desk_area = [int(width * 0.2), int(height * 0.4), int(width * 0.8), int(height * 0.9)]
+            return tuple(desk_area)
+        
+        # Group desk objects to determine the desk area
+        x_coords = [d[0] for d in desk_candidates]
+        y_coords = [d[1] for d in desk_candidates]
+        max_x = max([d[0] + d[2] for d in desk_candidates])
+        max_y = max([d[1] + d[3] for d in desk_candidates])
+        
+        # Create a bounding box that covers all desk-related objects
+        # with some padding (10% on each side)
+        min_x = max(0, int(min(x_coords) - 0.1 * width))
+        min_y = max(0, int(min(y_coords) - 0.1 * height))
+        max_x = min(width, int(max_x + 0.1 * width))
+        max_y = min(height, int(max_y + 0.1 * height))
+        
+        desk_area = (min_x, min_y, max_x, max_y)
