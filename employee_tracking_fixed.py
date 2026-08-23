@@ -256,4 +256,47 @@ class EmployeeTracker:
             except:
                 self.log_event(f"Failed to delete uploaded video: {self.uploaded_video_path}")
         return {"status": "success", "message": "Tracking stopped"}
-    
+
+    def get_current_frame(self):
+        """Get the latest processed frame for the video feed"""
+        with self.lock:
+            if self.current_frame is not None:
+                ret,jpeg=cv2.imencode(".jpg",self.current_frame)
+            if ret:
+                return jpeg.tobytes()
+
+        # Return a blank frame if no current frame is available
+        blank=np.zeros((300,400,3),dtype=np.uint8)
+        blank[:]=[50,50,50] # Dark gray background
+        cv2.putText(blank,"Loading...",(120,150),cv2.FONT_HERSHEY_SIMPLEX,0.7,(255,255,255),2)
+        ret,jpeg=cv2.imencode(".jpg",blank)
+        return jpeg.tobytes()
+
+    def open_camera(self):
+        try:
+            if self.source_type == "upload" and self.uploaded_video_path:
+                # Use uploaded video file 
+                cap=cv2.VideoCapture(self.uploaded_video_path)
+                if not cap.isOpened():
+                   self.log_event(f"Failed to open uploaded video: {self.uploaded_video_path}")
+                   return None
+                return cap
+            elif self.source_type == "webcam":
+                if isinstance(self.camera_source, int) or self.camera_source.isdigit():
+                    cap=cv2.VideoCapture(int(self.camera_source)) 
+                else:
+                    cap=cv2.VideoCapture(self.camera_source)
+            elif self.source_type == "custom":
+                cap=cv2.VideoCapture(self.camera_source)
+            else:
+                self.log_event(f"Unsupported source type: {self.source_type}")
+                return None
+
+            if not cap.isOpened():
+                self.log_event(f"Failed to open camera source: {self.camera_source}")
+                return None
+
+            return cap
+        except Exception as e:
+            self.log_event(f"Error opening camera: {e}")
+            return None 
