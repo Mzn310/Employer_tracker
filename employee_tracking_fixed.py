@@ -238,4 +238,22 @@ class EmployeeTracker:
         return {"status": "success", "message": "Tracking started"}
 
 
+    def stop_tracking(self):
+        if not self.is_running:
+            return {"status": "error", "message": "Tracking is not running"}
+
+        self.is_running = False
+        if self.tracking_thread:
+            self.tracking_thread.join(timeout=5)
+
+        self.log_event("Tracking system stopped")
+
+        if self.source_type == "upload" and self.uploaded_video_path:
+            try:
+                os.remove(self.uploaded_video_path)
+                self.log_event(f"Deleted uploaded video: {self.uploaded_video_path}")
+                self.uploaded_video_path = None
+            except:
+                self.log_event(f"Failed to delete uploaded video: {self.uploaded_video_path}")
+        return {"status": "success", "message": "Tracking stopped"}
     
