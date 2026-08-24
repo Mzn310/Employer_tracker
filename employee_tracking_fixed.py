@@ -215,7 +215,7 @@ class EmployeeTracker:
                 self.log_event("Failed to parse manual coords, using default area")
         else:
             # Auto-detect desk area
-            self.monitor_area = self._detect_desk_area(cap)
+            self.monitor_area = self.detect_desk_area(cap)
             self.log_event(f"Auto-detected desk area: {self.monitor_area}")
 
          # Release initial camera
@@ -261,47 +261,34 @@ class EmployeeTracker:
 
     def get_current_frame(self):
         """Get the latest processed frame for the video feed"""
+
         with self.lock:
             if self.current_frame is not None:
-                ret,jpeg=cv2.imencode(".jpg",self.current_frame)
-            if ret:
-                return jpeg.tobytes()
+                ret, jpeg = cv2.imencode(
+                    ".jpg",
+                    self.current_frame
+                )
 
-        # Return a blank frame if no current frame is available
-        blank=np.zeros((300,400,3),dtype=np.uint8)
-        blank[:]=[50,50,50] # Dark gray background
-        cv2.putText(blank,"Loading...",(120,150),cv2.FONT_HERSHEY_SIMPLEX,0.7,(255,255,255),2)
-        ret,jpeg=cv2.imencode(".jpg",blank)
+                if ret:
+                    return jpeg.tobytes()
+
+        # Return placeholder frame
+        blank = np.zeros((300, 400, 3), dtype=np.uint8)
+        blank[:] = [50, 50, 50]
+
+        cv2.putText(
+            blank,
+            "Loading...",
+            (120, 150),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.7,
+            (255, 255, 255),
+            2
+        )
+
+        ret, jpeg = cv2.imencode(".jpg", blank)
         return jpeg.tobytes()
-
-    def open_camera(self):
-        try:
-            if self.source_type == "upload" and self.uploaded_video_path:
-                # Use uploaded video file 
-                cap=cv2.VideoCapture(self.uploaded_video_path)
-                if not cap.isOpened():
-                   self.log_event(f"Failed to open uploaded video: {self.uploaded_video_path}")
-                   return None
-                return cap
-            elif self.source_type == "webcam":
-                if isinstance(self.camera_source, int) or self.camera_source.isdigit():
-                    cap=cv2.VideoCapture(int(self.camera_source)) 
-                else:
-                    cap=cv2.VideoCapture(self.camera_source)
-            elif self.source_type == "custom":
-                cap=cv2.VideoCapture(self.camera_source)
-            else:
-                self.log_event(f"Unsupported source type: {self.source_type}")
-                return None
-
-            if not cap.isOpened():
-                self.log_event(f"Failed to open camera source: {self.camera_source}")
-                return None
-
-            return cap
-        except Exception as e:
-            self.log_event(f"Error opening camera: {e}")
-            return None 
+        
 
     def detect_desk_area(self, cap):
         self.log_event("Starting desk area detection...")
@@ -549,3 +536,40 @@ class EmployeeTracker:
             cv2.putText(frame,f"Source: {self.source_type}",(10,110),cv2.FONT_HERSHEY_SIMPLEX,0.5,(255,255,255),1)
 
             return frame ,employee_detected
+
+
+    def open_camera(self):
+        try:
+            if self.source_type == "upload" and self.uploaded_video_path:
+                cap = cv2.VideoCapture(self.uploaded_video_path)
+            elif self.source_type == "webcam":
+                if isinstance(self.camera_source, str):
+                    self.camera_source = self.camera_source.strip()
+                    if self.camera_source.isdigit():
+                        self.camera_source = int(self.camera_source)
+
+                if isinstance(self.camera_source, int):
+                    cap = cv2.VideoCapture(self.camera_source, cv2.CAP_DSHOW)
+                else:
+                    cap = cv2.VideoCapture(self.camera_source)
+            elif self.source_type == "custom":
+                cap = cv2.VideoCapture(self.camera_source)
+            else:
+                self.log_event(f"Unsupported source type: {self.source_type}")
+                return None
+
+            if not cap.isOpened():
+               self.log_event(
+        f"Failed to open camera. "
+        f"Source: {self.camera_source}, "
+        f"Type: {type(self.camera_source)}"
+    )
+               return None
+
+            self.log_event(
+                f"Camera opened successfully: {self.camera_source}"
+            )
+            return cap
+        except Exception as e:
+            self.log_event(f"Error opening camera: {e}")
+            return None
