@@ -1,0 +1,7 @@
+Employee Tracking Log
+[2026-08-24 17:25:09] Downloaded yolov4-tiny.weights successfully
+[2026-08-24 17:25:10] Downloaded yolov4-tiny.cfg successfully
+[2026-08-24 17:25:11] Downloaded coco.names successfully
+[2026-08-24 19:17:20] Failed to open camera source: 0
+[2026-08-24 19:17:38] Failed to open camera source: 0
+[2026-08-24 19:20:03] Failed to open camera source: 1

@@ -144,7 +144,7 @@ class EmployeeTracker:
             video_file.save(file_path)
 
             self.log_event(f"Video uploaded: {filename}")
-            self.upload_video_path=file_path
+            self.uploaded_video_path =file_path
             self.source_type="upload"
 
             return self.start_tracking(config)
@@ -183,7 +183,7 @@ class EmployeeTracker:
                 return {"status": "error", "message": "Failed to set up detection model"}
         
         # Open camera to get frame dimensions
-        cap = self._open_camera()
+        cap = self.open_camera()
         if cap is None:
             return {"status": "error", "message": "Failed to open video source"}
             
@@ -201,12 +201,13 @@ class EmployeeTracker:
             try:
                 coords = config.get("manual_coords", "0.1,0.1,0.9,0.9")
                 x1, y1, x2, y2 = map(float, coords.split(','))
+
                 self.monitor_area = (
-                    int(x1),
-                    int(y1),
-                    int(x2),
-                    int(y2)
-                )
+    int(x1 * width),
+    int(y1 * height),
+    int(x2 * width),
+    int(y2 * height)
+)
                 self.log_event(f"Using manually specified area: {self.monitor_area}")
             except:
                 # Default if parsing fails
@@ -491,10 +492,15 @@ class EmployeeTracker:
                     y=int(center_y-h/2)
 
                     boxes.append([x,y,w,h])
-                    confidence.append(float(confidence))
+                    confidences.append(float(confidence))
                     class_ids.append(class_id)
         if len(boxes)>0:
-            indices=cv2.dnn.NMSBoxes(boxes,confidence,self.confidence_threshold,0.4)
+            indices = cv2.dnn.NMSBoxes(
+    boxes,
+    confidences,
+    self.confidence_threshold,
+    0.4
+)
 
             if len(indices)>0:
                 for i in indices.flatten():
@@ -505,7 +511,10 @@ class EmployeeTracker:
                     x_intersection=max(self.monitor_area[0],person_box[0])
                     y_intersection=max(self.monitor_area[1],person_box[1])
                     w_intersection=min(self.monitor_area[2],person_box[2])-x_intersection
-                    h_intersection=min(self.monitor_area{3},person_box[3])-y_intersection
+                    h_intersection = min(
+    self.monitor_area[3],
+    person_box[3]
+) - y_intersection
 
                     is_in_desk_area=False
                     if w_intersection>0 and h_intersection>0:
