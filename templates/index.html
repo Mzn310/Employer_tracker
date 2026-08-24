@@ -1,0 +1,1221 @@
+<title>Employee Tracking System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link
+  href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap"
+  rel="stylesheet"
+/>
+<link
+  href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"
+  rel="stylesheet"
+/>
+<link
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<style>
+  :root {
+    --bg: #f3f4f7;
+    --surface: #ffffff;
+    --surface-sunken: #edeff3;
+    --ink: #12161c;
+    --ink-muted: #5b6472;
+    --ink-faint: #8b93a1;
+    --border: #e3e6eb;
+    --border-strong: #d2d6de;
+    --accent: #2c5ce0;
+    --accent-ink: #1e3fa0;
+    --accent-soft: #e9effe;
+    --success: #14895f;
+    --success-soft: #e4f5ee;
+    --danger: #c6404b;
+    --danger-soft: #fbeaec;
+    --radius: 10px;
+    --font-display: "Space Grotesk", sans-serif;
+    --font-body: "Inter", sans-serif;
+    --font-mono: "JetBrains Mono", monospace;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    color: var(--ink);
+    background: var(--bg);
+    font-family: var(--font-body);
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a {
+    color: var(--accent);
+  }
+
+  /* ---------- Top bar ---------- */
+  .FW-Bar {
+    background: var(--surface);
+    color: var(--ink);
+    padding: 14px 28px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+
+  .FW-Bar .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .brand-mark {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: var(--ink);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: -0.02em;
+    flex: none;
+  }
+
+  .FW-Bar h2 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 1.15rem;
+    letter-spacing: -0.01em;
+    margin: 0;
+    line-height: 1.1;
+  }
+
+  .FW-Bar .brand-sub {
+    font-size: 11px;
+    color: var(--ink-faint);
+    font-family: var(--font-mono);
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+
+  #current-time {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    color: var(--ink-muted);
+    letter-spacing: 0.01em;
+  }
+
+  .system-pill {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 100px;
+    border: 1px solid var(--border-strong);
+    color: var(--ink-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .system-pill .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--ink-faint);
+  }
+
+  .system-pill.live {
+    border-color: rgba(20, 137, 95, 0.3);
+    color: var(--success);
+    background: var(--success-soft);
+  }
+  .system-pill.live .dot {
+    background: var(--success);
+    box-shadow: 0 0 0 3px rgba(20, 137, 95, 0.18);
+    animation: pulse-dot 1.6s infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%,
+    100% {
+      box-shadow: 0 0 0 3px rgba(20, 137, 95, 0.18);
+    }
+    50% {
+      box-shadow: 0 0 0 6px rgba(20, 137, 95, 0.06);
+    }
+  }
+
+  /* ---------- Layout ---------- */
+  .shell {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 24px 28px 48px;
+  }
+
+  /* ---------- Cards ---------- */
+  .card {
+    background: var(--surface);
+    color: var(--ink) !important;
+    border-radius: var(--radius);
+    margin-bottom: 20px;
+    border: 1px solid var(--border);
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  }
+
+  .card-body {
+    padding: 22px;
+  }
+
+  .panel-title {
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0 0 18px 0;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: var(--ink);
+  }
+
+  .panel-title .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 500;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  /* ---------- Form controls ---------- */
+  .form-label {
+    color: var(--ink-muted);
+    margin-top: 16px;
+    margin-bottom: 6px;
+    font-weight: 500;
+    font-size: 0.8rem;
+  }
+
+  .form-select,
+  .form-control {
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    color: var(--ink);
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-size: 0.9rem;
+    transition:
+      border-color 0.15s ease,
+      box-shadow 0.15s ease;
+  }
+
+  .form-select:focus,
+  .form-control:focus {
+    background: var(--surface);
+    color: var(--ink);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(44, 92, 224, 0.12);
+  }
+
+  .form-control::placeholder {
+    color: var(--ink-faint);
+  }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-weight: 600;
+    font-size: 0.88rem;
+    transition: all 0.15s ease;
+    border: 1px solid transparent;
+  }
+
+  .btn-secondary {
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--border-strong);
+  }
+  .btn-secondary:hover {
+    background: var(--surface-sunken);
+    color: var(--ink);
+    border-color: var(--border-strong);
+  }
+
+  .btn-success {
+    background: var(--ink);
+    color: #fff;
+  }
+  .btn-success:hover {
+    background: #262c36;
+    color: #fff;
+  }
+  .btn-success:disabled {
+    background: var(--surface-sunken);
+    color: var(--ink-faint);
+    border-color: var(--border);
+  }
+
+  .btn-danger {
+    background: var(--surface);
+    color: var(--danger);
+    border: 1px solid rgba(198, 64, 75, 0.35);
+  }
+  .btn-danger:hover {
+    background: var(--danger-soft);
+    color: var(--danger);
+  }
+  .btn-danger:disabled {
+    background: var(--surface);
+    color: var(--ink-faint);
+    border-color: var(--border);
+  }
+
+  /* ---------- Range ---------- */
+  .form-range {
+    height: 4px;
+  }
+  .form-range::-webkit-slider-runnable-track {
+    background: var(--border-strong);
+    height: 4px;
+    border-radius: 2px;
+  }
+  .form-range::-webkit-slider-thumb {
+    background: var(--accent);
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 1px var(--border-strong);
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    margin-top: -6px;
+  }
+  .form-range::-moz-range-track {
+    background: var(--border-strong);
+    height: 4px;
+    border-radius: 2px;
+  }
+  .form-range::-moz-range-thumb {
+    background: var(--accent);
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 1px var(--border-strong);
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+  }
+
+  #confidenceValue {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .form-label + .form-range + .d-flex span {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ink-faint);
+  }
+
+  /* ---------- File upload ---------- */
+  .file-upload-container {
+    background: var(--surface-sunken);
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 12px;
+    border: 1.5px dashed var(--border-strong);
+    transition: all 0.15s ease;
+  }
+  .file-upload-container:hover {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+
+  .file-upload-label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 12px;
+    color: var(--ink-muted);
+    font-weight: 500;
+  }
+
+  .custom-file-upload {
+    display: block;
+    width: 100%;
+    padding: 10px 14px;
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--border-strong);
+    border-radius: 7px;
+    cursor: pointer;
+    text-align: center;
+    font-weight: 500;
+    font-size: 0.85rem;
+  }
+  .custom-file-upload:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .source-option-container {
+    margin-top: 12px;
+    display: none;
+  }
+
+  /* ---------- Stats ---------- */
+  .stats-container {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    gap: 10px;
+  }
+
+  .stat-card {
+    background: var(--surface-sunken);
+    border-radius: 8px;
+    padding: 14px 12px;
+    flex-basis: 48%;
+    text-align: left;
+    border: 1px solid var(--border);
+  }
+
+  .stat-value {
+    font-family: var(--font-mono);
+    font-size: 21px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 2px;
+    line-height: 1.2;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--ink-faint);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .status-indicator {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+    margin-bottom: 1px;
+  }
+  .status-present {
+    background: var(--success);
+    box-shadow: 0 0 0 3px rgba(20, 137, 95, 0.18);
+  }
+  .status-absent {
+    background: var(--danger);
+    box-shadow: 0 0 0 3px rgba(198, 64, 75, 0.16);
+  }
+  .status-inactive {
+    background: var(--ink-faint);
+    box-shadow: 0 0 0 3px rgba(139, 147, 161, 0.15);
+  }
+
+  /* ---------- Logs ---------- */
+  .log-container {
+    width: 100%;
+    height: 230px;
+    border: 1px solid var(--border);
+    background: #0f1117;
+    padding: 12px;
+    overflow-y: auto;
+    border-radius: 8px;
+    font-family: var(--font-mono);
+  }
+
+  .log-entry {
+    padding: 7px 10px;
+    margin: 3px 0;
+    border-left: 2px solid #333947;
+    color: #c4c9d4;
+    font-size: 0.78rem;
+    line-height: 1.4;
+    border-radius: 0 4px 4px 0;
+  }
+  .log-entry.present {
+    border-left-color: #2fbe85;
+    color: #b7efd8;
+    background: rgba(47, 190, 133, 0.06);
+  }
+  .log-entry.absent {
+    border-left-color: #e5606b;
+    color: #f5c6c9;
+    background: rgba(229, 96, 107, 0.06);
+  }
+
+  /* ---------- Video / viewfinder ---------- */
+  .video-frame {
+    position: relative;
+    border-radius: var(--radius);
+    background: #0b0d12;
+    min-height: 420px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+
+  .video-feed {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  .vf-corner {
+    position: absolute;
+    width: 26px;
+    height: 26px;
+    border: 2px solid rgba(255, 255, 255, 0.55);
+    z-index: 3;
+    pointer-events: none;
+  }
+  .vf-tl {
+    top: 14px;
+    left: 14px;
+    border-right: none;
+    border-bottom: none;
+    border-top-left-radius: 4px;
+  }
+  .vf-tr {
+    top: 14px;
+    right: 14px;
+    border-left: none;
+    border-bottom: none;
+    border-top-right-radius: 4px;
+  }
+  .vf-bl {
+    bottom: 14px;
+    left: 14px;
+    border-right: none;
+    border-top: none;
+    border-bottom-left-radius: 4px;
+  }
+  .vf-br {
+    bottom: 14px;
+    right: 14px;
+    border-left: none;
+    border-top: none;
+    border-bottom-right-radius: 4px;
+  }
+
+  .vf-scanline {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(44, 92, 224, 0.9),
+      transparent
+    );
+    top: 0;
+    opacity: 0;
+    z-index: 3;
+  }
+  .video-frame.tracking .vf-scanline {
+    opacity: 1;
+    animation: scan 2.4s linear infinite;
+  }
+  @keyframes scan {
+    0% {
+      top: 4%;
+    }
+    50% {
+      top: 94%;
+    }
+    100% {
+      top: 4%;
+    }
+  }
+
+  .vf-placeholder {
+    color: #6b7280;
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    padding: 20px;
+  }
+  .vf-placeholder i {
+    font-size: 26px;
+    display: block;
+    margin-bottom: 10px;
+    color: #3a3f4b;
+  }
+
+  .vf-badge-row {
+    margin-top: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12.5px;
+    color: var(--ink-muted);
+    font-weight: 500;
+  }
+  .legend-swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    flex: none;
+  }
+  .sw-success {
+    background: var(--success);
+  }
+  .sw-danger {
+    background: var(--danger);
+  }
+  .sw-accent {
+    background: var(--accent);
+  }
+
+  /* ---------- Section header for main col ---------- */
+  .main-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .main-head h4 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 1.05rem;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+  .main-head .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  /* ---------- Scrollbar ---------- */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+  }
+  .card ::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+  }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 768px) {
+    .shell {
+      padding: 16px 14px 32px;
+    }
+    .stats-container {
+      flex-direction: column;
+    }
+    .stat-card {
+      flex-basis: 100%;
+    }
+    .FW-Bar {
+      padding: 12px 16px;
+    }
+    .card-body {
+      padding: 16px;
+    }
+    .topbar-right {
+      gap: 10px;
+    }
+    #current-time {
+      display: none;
+    }
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+</style>
+
+<div class="FW-Bar">
+  <div class="brand">
+    <div class="brand-mark">ET</div>
+    <div>
+      <h2>Employee Tracking</h2>
+      <div class="brand-sub">Desk presence monitor</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span id="current-time"></span>
+    <span class="system-pill" id="systemPill"
+      ><span class="dot"></span><span id="systemPillText">Idle</span></span
+    >
+  </div>
+</div>
+
+<div class="shell">
+  <div class="row g-4">
+    <!-- Control Panel -->
+    <div class="col-lg-3">
+      <div class="card">
+        <div class="card-body">
+          <div class="panel-title">
+            Configuration
+            <span class="eyebrow">Setup</span>
+          </div>
+          <form id="configForm">
+            <div class="mb-2">
+              <label for="cameraSource" class="form-label">Input source</label>
+              <select id="cameraSource" class="form-select" required>
+                <option value="webcam">Webcam</option>
+                <option value="upload">Upload video</option>
+                <option value="gdrive">Google Drive (coming soon)</option>
+                <option value="s3">Amazon S3 (coming soon)</option>
+                <option value="custom">Custom source</option>
+              </select>
+
+              <div id="webcamOptions" class="source-option-container">
+                <select id="webcamSelect" class="form-select mt-2">
+                  <option value="0">Default camera (0)</option>
+                  <option value="1">Secondary camera (1)</option>
+                </select>
+              </div>
+
+              <div
+                id="uploadOptions"
+                class="source-option-container file-upload-container"
+              >
+                <label class="file-upload-label">Select video file</label>
+                <label for="videoUpload" class="custom-file-upload">
+                  <i class="fas fa-upload me-2"></i>Choose file
+                </label>
+                <input
+                  type="file"
+                  id="videoUpload"
+                  accept="video/*"
+                  style="display: none"
+                />
+                <div
+                  id="uploadFileName"
+                  class="mt-2 text-center"
+                  style="
+                    font-size: 11.5px;
+                    word-break: break-all;
+                    color: var(--ink-muted);
+                  "
+                ></div>
+              </div>
+
+              <div id="customOptions" class="source-option-container">
+                <input
+                  type="text"
+                  id="customSource"
+                  class="form-control"
+                  placeholder="Enter custom camera URL"
+                />
+              </div>
+            </div>
+
+            <div class="mb-2">
+              <label for="absenceThreshold" class="form-label"
+                >Absence threshold (seconds)</label
+              >
+              <input
+                type="number"
+                id="absenceThreshold"
+                class="form-control"
+                value="5"
+                min="1"
+                max="300"
+              />
+            </div>
+
+            <div class="mb-2">
+              <label for="confidenceThreshold" class="form-label"
+                >Detection confidence</label
+              >
+              <input
+                type="range"
+                class="form-range"
+                id="confidenceThreshold"
+                min="0.1"
+                max="1.0"
+                step="0.05"
+                value="0.5"
+              />
+              <div class="d-flex justify-content-between">
+                <span>0.1</span>
+                <span id="confidenceValue">0.5</span>
+                <span>1.0</span>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="areaMethod" class="form-label">Monitoring area</label>
+              <select id="areaMethod" class="form-select">
+                <option value="auto">Auto-detect desk area</option>
+                <option value="manual">Manually specify area</option>
+              </select>
+              <div id="manualCoords" style="display: none">
+                <input
+                  type="text"
+                  id="coordsInput"
+                  class="form-control mt-2"
+                  placeholder="x1,y1,x2,y2"
+                />
+                <small style="color: var(--ink-faint); font-size: 11px"
+                  >Format: left, top, right, bottom</small
+                >
+              </div>
+            </div>
+
+            <div class="d-grid gap-2">
+              <button type="button" id="startBtn" class="btn btn-success">
+                <i class="fas fa-play me-2"></i>Start tracking
+              </button>
+              <button
+                type="button"
+                id="stopBtn"
+                class="btn btn-danger"
+                disabled
+              >
+                <i class="fas fa-stop me-2"></i>Stop tracking
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <div class="panel-title">
+            Current status
+            <span class="eyebrow">Live</span>
+          </div>
+          <div class="stats-container">
+            <div class="stat-card">
+              <div class="stat-value">
+                <span class="status-indicator" id="statusIndicator"></span
+                ><span id="statusValue">Inactive</span>
+              </div>
+              <div class="stat-label">Tracking status</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="absenceTime">0s</div>
+              <div class="stat-label">Current absence</div>
+            </div>
+          </div>
+          <div class="stats-container" style="margin-bottom: 0">
+            <div class="stat-card">
+              <div class="stat-value" id="framesProcessed">0</div>
+              <div class="stat-label">Frames processed</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="lastSeen">N/A</div>
+              <div class="stat-label">Last seen</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <div class="panel-title">
+            System logs
+            <span class="eyebrow">Audit trail</span>
+          </div>
+          <div class="log-container">
+            <div id="logContent"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Video Display -->
+    <div class="col-lg-9">
+      <div class="card">
+        <div class="card-body">
+          <div class="main-head">
+            <h4>Live monitoring</h4>
+            <span class="eyebrow" id="feedEyebrow">Feed offline</span>
+          </div>
+          <div class="video-frame" id="videoFrame">
+            <span class="vf-corner vf-tl"></span>
+            <span class="vf-corner vf-tr"></span>
+            <span class="vf-corner vf-bl"></span>
+            <span class="vf-corner vf-br"></span>
+            <span class="vf-scanline"></span>
+            <img
+              id="videoFeed"
+              class="video-feed"
+              src="{{ url_for('video_feed') }}"
+              alt="Video feed"
+              onerror="
+                this.style.display = 'none';
+                document.getElementById('vfPlaceholder').style.display =
+                  'block';
+              "
+            />
+            <div id="vfPlaceholder" class="vf-placeholder">
+              <i class="fas fa-video-slash"></i>
+              Waiting for feed &mdash; start tracking to connect a source
+            </div>
+          </div>
+          <div class="vf-badge-row">
+            <div class="legend">
+              <span class="legend-item"
+                ><span class="legend-swatch sw-success"></span>Monitoring
+                area</span
+              >
+              <span class="legend-item"
+                ><span class="legend-swatch sw-danger"></span>Employee at
+                desk</span
+              >
+              <span class="legend-item"
+                ><span class="legend-swatch sw-accent"></span>Person outside
+                area</span
+              >
+            </div>
+            <button id="captureBtn" class="btn btn-secondary">
+              <i class="fas fa-camera me-2"></i>Capture frame
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  $(document).ready(function () {
+    // Update current time
+    function updateTime() {
+      const now = new Date();
+      $("#current-time").text(now.toLocaleString());
+    }
+    updateTime();
+    setInterval(updateTime, 1000);
+
+    // Show/hide source option inputs based on selection
+    $("#cameraSource").change(function () {
+      $(".source-option-container").hide();
+      switch ($(this).val()) {
+        case "webcam":
+          $("#webcamOptions").show();
+          break;
+        case "upload":
+          $("#uploadOptions").show();
+          break;
+        case "custom":
+          $("#customOptions").show();
+          break;
+        case "gdrive":
+        case "s3":
+          addLogEntry("This source option is not yet available", "absent");
+          break;
+      }
+    });
+
+    $("#webcamOptions").show();
+
+    $("#videoUpload").change(function () {
+      const fileName = $(this).val().split("\\").pop();
+      if (fileName) {
+        $("#uploadFileName").text(fileName);
+        addLogEntry("Video file selected: " + fileName, "present");
+      } else {
+        $("#uploadFileName").text("");
+      }
+    });
+
+    $("#areaMethod").change(function () {
+      $("#manualCoords").toggle($(this).val() === "manual");
+    });
+
+    $("#confidenceThreshold").on("input", function () {
+      $("#confidenceValue").text($(this).val());
+    });
+
+    function setSystemPill(state) {
+      const pill = $("#systemPill");
+      pill.removeClass("live");
+      if (state === "active") {
+        pill.addClass("live");
+        $("#systemPillText").text("Tracking live");
+        $("#feedEyebrow").text("Feed connected");
+        $("#videoFrame").addClass("tracking");
+      } else {
+        $("#systemPillText").text("Idle");
+        $("#feedEyebrow").text("Feed offline");
+        $("#videoFrame").removeClass("tracking");
+      }
+    }
+
+    $("#startBtn").click(function () {
+      let sourceType = $("#cameraSource").val();
+      let cameraSource;
+
+      switch (sourceType) {
+        case "webcam":
+          cameraSource = $("#webcamSelect").val();
+          break;
+        case "upload":
+          const fileInput = document.getElementById("videoUpload");
+          if (fileInput.files.length === 0) {
+            addLogEntry("Please select a video file first", "absent");
+            return;
+          }
+          uploadVideoFile(fileInput.files[0]);
+          return;
+        case "custom":
+          cameraSource = $("#customSource").val();
+          break;
+        case "gdrive":
+        case "s3":
+          addLogEntry("This source option is not yet available", "absent");
+          return;
+      }
+
+      const config = {
+        camera_source: cameraSource,
+        absence_threshold: $("#absenceThreshold").val(),
+        confidence: $("#confidenceThreshold").val(),
+        area_method: $("#areaMethod").val(),
+        source_type: sourceType,
+      };
+
+      if ($("#areaMethod").val() === "manual") {
+        config.manual_coords = $("#coordsInput").val();
+      }
+
+      $(this).prop("disabled", true);
+
+      $.ajax({
+        url: "/start_tracking",
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify(config),
+        success: function (response) {
+          if (response.status === "success") {
+            addLogEntry("Tracking started successfully", "present");
+            $("#startBtn").prop("disabled", true);
+            $("#stopBtn").prop("disabled", false);
+            setSystemPill("active");
+            updateStatus();
+          } else {
+            addLogEntry("Error: " + response.message, "absent");
+            $("#startBtn").prop("disabled", false);
+          }
+        },
+        error: function () {
+          addLogEntry("Server error while starting tracking", "absent");
+          $("#startBtn").prop("disabled", false);
+        },
+      });
+    });
+
+    function uploadVideoFile(file) {
+      const formData = new FormData();
+      formData.append("video", file);
+      formData.append("absence_threshold", $("#absenceThreshold").val());
+      formData.append("confidence", $("#confidenceThreshold").val());
+      formData.append("area_method", $("#areaMethod").val());
+
+      if ($("#areaMethod").val() === "manual") {
+        formData.append("manual_coords", $("#coordsInput").val());
+      }
+
+      $("#startBtn").prop("disabled", true);
+      addLogEntry("Uploading video file...", "");
+
+      $.ajax({
+        url: "/upload_video",
+        type: "POST",
+        data: formData,
+        processData: false,
+        contentType: false,
+        xhr: function () {
+          const xhr = new XMLHttpRequest();
+          xhr.upload.addEventListener(
+            "progress",
+            function (e) {
+              if (e.lengthComputable) {
+                const percentComplete = Math.round((e.loaded / e.total) * 100);
+                addLogEntry(`Upload progress: ${percentComplete}%`, "");
+              }
+            },
+            false,
+          );
+          return xhr;
+        },
+        success: function (response) {
+          if (response.status === "success") {
+            addLogEntry("Video uploaded and tracking started", "present");
+            $("#startBtn").prop("disabled", true);
+            $("#stopBtn").prop("disabled", false);
+            setSystemPill("active");
+            updateStatus();
+          } else {
+            addLogEntry("Error: " + response.message, "absent");
+            $("#startBtn").prop("disabled", false);
+          }
+        },
+        error: function () {
+          addLogEntry("Server error while uploading video", "absent");
+          $("#startBtn").prop("disabled", false);
+        },
+      });
+    }
+
+    $("#stopBtn").click(function () {
+      $(this).prop("disabled", true);
+
+      $.ajax({
+        url: "/stop_tracking",
+        type: "POST",
+        success: function (response) {
+          if (response.status === "success") {
+            addLogEntry("Tracking stopped", "absent");
+            $("#startBtn").prop("disabled", false);
+            $("#stopBtn").prop("disabled", true);
+            setSystemPill("inactive");
+            updateStatus();
+          } else {
+            addLogEntry("Error: " + response.message, "absent");
+            $("#stopBtn").prop("disabled", false);
+          }
+        },
+        error: function () {
+          addLogEntry("Server error while stopping tracking", "absent");
+          $("#stopBtn").prop("disabled", false);
+        },
+      });
+    });
+
+    $("#captureBtn").click(function () {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+      addLogEntry("Frame captured: " + timestamp, "present");
+    });
+
+    function addLogEntry(message, type = "") {
+      const timestamp = new Date().toLocaleTimeString();
+      const logEntry = $('<div class="log-entry ' + type + '"></div>').text(
+        `[${timestamp}] ${message}`,
+      );
+      $("#logContent").append(logEntry);
+
+      const logContainer = document.querySelector("#logContent");
+      logContainer.parentElement.scrollTop =
+        logContainer.parentElement.scrollHeight;
+
+      if (message.includes("absence") || message.includes("Absence")) {
+        const absenceEntry = $('<div class="log-entry absent"></div>').text(
+          `[${timestamp}] ${message}`,
+        );
+        $("#absenceLog").append(absenceEntry);
+
+        const absenceLog = document.querySelector("#absenceLog");
+        if (absenceLog)
+          absenceLog.parentElement.scrollTop =
+            absenceLog.parentElement.scrollHeight;
+      }
+    }
+
+    function updateStatus() {
+      $.get("/status", function (data) {
+        if (data.status === "active") {
+          $("#statusValue").text("Active");
+          $("#statusIndicator")
+            .removeClass("status-inactive status-present status-absent")
+            .addClass(
+              data.employee_present ? "status-present" : "status-absent",
+            );
+
+          $("#framesProcessed").text(data.frames_processed);
+
+          if (!data.employee_present && data.absence_duration) {
+            $("#absenceTime").text(Math.round(data.absence_duration) + "s");
+          } else {
+            $("#absenceTime").text("0s");
+          }
+        } else {
+          $("#statusValue").text("Inactive");
+          $("#statusIndicator")
+            .removeClass("status-present status-absent")
+            .addClass("status-inactive");
+        }
+      }).fail(function () {
+        setTimeout(updateStatus, 2000);
+      });
+    }
+
+    $.get("/logs", function (data) {
+      if (data.status === "success" && data.logs) {
+        data.logs.forEach(function (log) {
+          const type =
+            log.includes("absence") || log.includes("Absence")
+              ? "absent"
+              : log.includes("present") || log.includes("returned")
+                ? "present"
+                : "";
+          $("#logContent").append(
+            $('<div class="log-entry ' + type + '"></div>').text(log),
+          );
+        });
+
+        const logContainer = document.querySelector("#logContent");
+        logContainer.parentElement.scrollTop =
+          logContainer.parentElement.scrollHeight;
+      }
+    });
+
+    updateStatus();
+
+    addLogEntry("System initialized and ready", "");
+    addLogEntry("Configure settings and press Start Tracking to begin", "");
+  });
+</script>
