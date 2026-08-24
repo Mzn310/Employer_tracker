@@ -411,3 +411,49 @@ class EmployeeTracker:
 
                 frame=cv2.resize(frame,(600,int(frame.shape[0]*600/frame.shape[1])))
                 height,width=frame.shape[:2]
+
+                proceessed_frame, employee_detected=self.process_frame(frame)
+
+                current_time=time.time()
+
+                if employee_detected:
+                    if not self.employee_present:
+                        self.employee_present=True
+                        if self.absence_start_time is not None:
+                            absence_duration=current_time-self.absence_start_time
+                            self.log_event(f"Employee returned after {absence_duration:.1f} seconds")
+                            self.absence_start_time=None
+                            self.absence_logged=False
+
+                    self.last_present_time=current_time
+                else:
+                    if self.employee_present:
+                        self.employee_present=False
+                        self.absence_start_time=current_time
+                    elif self.absence_start_time is not None:
+                        absence_duration=current_time-self.absence_start_time
+                        if absence_duration>= self.absence_threshold and not self.absence_logged:
+                            self.log_event("Employee absence detected")
+                            self.absence_logged=True
+
+
+                with self.lock:
+                    self.current_frame=proceessed_frame
+                    self.frames_processed+=1
+
+                if current_time-last_save_time>10:
+                    frame_filename=os.path.join(self.output_dir,f"frame_{self.frames_processed:06d}.jpg")
+                    cv2.imwrite(frame_filename,proceessed_frame)
+                    last_save_time=current_time
+
+
+                if self.source_type=="upload":
+                    time.sleep(0.03) # ~30 fps
+                else:
+                    time.sleep(0.01)
+        except Exception as e:
+            self.log_event(f"Error in tracking loop: {str(e)}")
+        finally:
+            cap.release()
+            self.is_running=False
+            self.log_event("Tracking loop ended")
