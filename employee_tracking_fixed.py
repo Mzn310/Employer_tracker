@@ -457,3 +457,86 @@ class EmployeeTracker:
             cap.release()
             self.is_running=False
             self.log_event("Tracking loop ended")
+
+    def process_frame(self,frame):
+        height,width=frame.shape[:2]
+        employee_detected=False
+
+        blob=cv2.dnn.blobFromImage(frame,1/255.0,(416,416),swapRB=True,crop=False)
+        self.net.setInput(blob)
+
+        try:
+            detections=self.net.forward(self.output_layers)
+        except Exception as e:
+            self.log_event(f"Error during detection: {e}")
+            return frame, False
+
+        boxes=[]
+        confidences=[]
+        class_ids=[]
+
+        for detection in detections:
+            for obj_detection in detection:
+                scores=obj_detection[5:]
+                class_id=np.argmax(scores)
+                confidence=scores[class_id]
+
+                if confidence>self.confidence_threshold and class_id==0: 
+                    center_x=int(obj_detection[0]*width)
+                    center_y=int(obj_detection[1]*height)
+                    w=int(obj_detection[2]*width)
+                    h=int(obj_detection[3]*height)
+
+                    x=int(center_x-w/2)
+                    y=int(center_y-h/2)
+
+                    boxes.append([x,y,w,h])
+                    confidence.append(float(confidence))
+                    class_ids.append(class_id)
+        if len(boxes)>0:
+            indices=cv2.dnn.NMSBoxes(boxes,confidence,self.confidence_threshold,0.4)
+
+            if len(indices)>0:
+                for i in indices.flatten():
+                    x,y,w,h=boxes[i]
+
+                    person_box=(x,y,x+w,y+h)
+
+                    x_intersection=max(self.monitor_area[0],person_box[0])
+                    y_intersection=max(self.monitor_area[1],person_box[1])
+                    w_intersection=min(self.monitor_area[2],person_box[2])-x_intersection
+                    h_intersection=min(self.monitor_area{3},person_box[3])-y_intersection
+
+                    is_in_desk_area=False
+                    if w_intersection>0 and h_intersection>0:
+                        intersection_area=w_intersection*h_intersection
+                        person_area=w*h
+                        overlap_ratio=intersection_area/person_area
+
+                        if overlap_ratio>0.3:
+                            employee_detected=True
+                            is_in_desk_area=True
+
+                    if is_in_desk_area:
+                        cv2.rectangle(frame,(x,y),(x+w,y+h),(0,0,255),2)
+                        label=f"Employe: {confidences[i]:.2f}"
+                        cv2.putText(frame,label,(x,y-10),cv2.FONT_HERSHEY_SIMPLEX,0.5,(0,0,255),2)
+                    else:
+                        cv2.rectangle(frame,(x,y),(x+w,y+h),(255,0,0),2)
+                        label=f"Person:{confidences[i]:.2f}"
+                        cv2.putText(frame,label,(x,y-10),cv2.FONT_HERSHEY_SIMPLEX,0.5,(255,0,0),2)
+            cv2.rectangle(frame,(self.monitor_area[0],self.monitor_area[1]),(self.monitor_area[2],self.monitor_area[3]),(0,255,0),2)
+
+            status_text= "Status: PRESENT" if employee_detected else "Status: ABSENT"
+            cv2.putText(frame, status_text, (10,30),cv2.FONT_HERSHEY_SIMPLEX,0.7,(0,255,0) if employee_detected else (0,0,255),2)
+
+            if not employee_detected and self.absence_start_time is not None:
+                absence_duration=time.time()-self.absence_start_time
+                duration_text=f"Absence: {absence_duration:.1f}s"
+                cv2.putText(frame,duration_text,(10,60),cv2.FONT_HERSHEY_SIMPLEX,0.7,(0,0,255),2)
+
+            timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            cv2.putText(frame,f"Time: {timestamp}",(10,90),cv2.FONT_HERSHEY_SIMPLEX,0.5,(255,255,255),1)
+            cv2.putText(frame,f"Source: {self.source_type}",(10,110),cv2.FONT_HERSHEY_SIMPLEX,0.5,(255,255,255),1)
+
+            return frame ,employee_detected
