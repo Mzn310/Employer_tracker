@@ -568,7 +568,10 @@ class EmployeeTracker:
                         self.camera_source = int(self.camera_source)
 
                 if isinstance(self.camera_source, int):
-                    cap = cv2.VideoCapture(self.camera_source, cv2.CAP_DSHOW)
+                    # CAP_DSHOW only exists on Windows; use the default
+                    # backend on other platforms.
+                    backend = cv2.CAP_DSHOW if os.name == "nt" else cv2.CAP_ANY
+                    cap = cv2.VideoCapture(self.camera_source, backend)
                 else:
                     cap = cv2.VideoCapture(self.camera_source)
             elif self.source_type == "custom":
@@ -578,12 +581,12 @@ class EmployeeTracker:
                 return None
 
             if not cap.isOpened():
-               self.log_event(
-        f"Failed to open camera. "
-        f"Source: {self.camera_source}, "
-        f"Type: {type(self.camera_source)}"
-    )
-               return None
+                self.log_event(
+                    f"Failed to open camera. "
+                    f"Source: {self.camera_source}, "
+                    f"Type: {type(self.camera_source)}"
+                )
+                return None
 
             self.log_event(
                 f"Camera opened successfully: {self.camera_source}"

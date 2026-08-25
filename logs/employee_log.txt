@@ -136,3 +136,8 @@ Employee Tracking Log
 [2026-08-25 11:14:03] Auto-detected desk area: (120, 135, 480, 304)
 [2026-08-25 11:14:03] Tracking started using upload source
 [2026-08-25 11:14:03] Camera opened successfully: 0
+[2026-08-25 11:20:15] Employee returned after 0.1 seconds
+[2026-08-25 11:20:15] Employee returned after 0.3 seconds
+[2026-08-25 11:20:16] Employee returned after 0.3 seconds
+[2026-08-25 11:20:16] Employee returned after 0.5 seconds
+[2026-08-25 11:20:18] Employee returned after 0.2 seconds
