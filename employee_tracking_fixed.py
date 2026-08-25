@@ -7,7 +7,6 @@ import urllib.request
 import threading
 import queue
 import tempfile
-from sympy import re
 from werkzeug.utils import secure_filename
 
 
@@ -233,7 +232,7 @@ class EmployeeTracker:
         
         # Start tracking thread
         self.is_running = True
-        self.tracking_thread = threading.Thread(target=self._tracking_loop)
+        self.tracking_thread = threading.Thread(target=self.tracking_loop)
         self.tracking_thread.daemon = True
         self.tracking_thread.start()
         
@@ -263,33 +262,41 @@ class EmployeeTracker:
         """Get the latest processed frame for the video feed"""
 
         with self.lock:
-            if self.current_frame is not None:
-                ret, jpeg = cv2.imencode(
-                    ".jpg",
-                    self.current_frame
-                )
+          if self.current_frame is not None:
+            ret, jpeg = cv2.imencode(".jpg", self.current_frame)
+            if ret:
+                return jpeg.tobytes()
 
-                if ret:
-                    return jpeg.tobytes()
+    # Placeholder must match the real frame's dimensions (600 wide,
+    # same aspect ratio your tracking_loop uses) so the UI never
+    # shows a mismatched/cropped box when there's no feed yet.
+        width = 600
+        height = 338  # ~16:9 at 600px wide; adjust if your source aspect differs
 
-        # Return placeholder frame
-        blank = np.zeros((300, 400, 3), dtype=np.uint8)
-        blank[:] = [50, 50, 50]
+        blank = np.zeros((height, width, 3), dtype=np.uint8)
+        blank[:] = [40, 40, 40]
 
-        cv2.putText(
-            blank,
-            "Loading...",
-            (120, 150),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.7,
-            (255, 255, 255),
-            2
-        )
+    # Simple "no signal" icon-style message, centered
+        text = "No signal"
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        font_scale = 1.0
+        thickness = 2
+        text_size, _ = cv2.getTextSize(text, font, font_scale, thickness)
+        text_x = (width - text_size[0]) // 2
+        text_y = (height + text_size[1]) // 2
+
+        cv2.putText(blank, text, (text_x, text_y), font, font_scale, (200, 200, 200), thickness)
+
+        sub_text = "Waiting for camera or video source..."
+        sub_scale = 0.5
+        sub_thickness = 1
+        sub_size, _ = cv2.getTextSize(sub_text, font, sub_scale, sub_thickness)
+        sub_x = (width - sub_size[0]) // 2
+        sub_y = text_y + 30
+        cv2.putText(blank, sub_text, (sub_x, sub_y), font, sub_scale, (150, 150, 150), sub_thickness)
 
         ret, jpeg = cv2.imencode(".jpg", blank)
         return jpeg.tobytes()
-        
-
     def detect_desk_area(self, cap):
         self.log_event("Starting desk area detection...")
 
@@ -446,97 +453,109 @@ class EmployeeTracker:
             self.is_running=False
             self.log_event("Tracking loop ended")
 
-    def process_frame(self,frame):
-        height,width=frame.shape[:2]
-        employee_detected=False
+    def process_frame(self, frame):
+        height, width = frame.shape[:2]
+        employee_detected = False
 
-        blob=cv2.dnn.blobFromImage(frame,1/255.0,(416,416),swapRB=True,crop=False)
+        blob = cv2.dnn.blobFromImage(frame, 1/255.0, (416, 416), swapRB=True, crop=False)
         self.net.setInput(blob)
 
         try:
-            detections=self.net.forward(self.output_layers)
+            detections = self.net.forward(self.output_layers)
         except Exception as e:
             self.log_event(f"Error during detection: {e}")
             return frame, False
 
-        boxes=[]
-        confidences=[]
-        class_ids=[]
+        boxes = []
+        confidences = []
+        class_ids = []
 
         for detection in detections:
             for obj_detection in detection:
-                scores=obj_detection[5:]
-                class_id=np.argmax(scores)
-                confidence=scores[class_id]
+                scores = obj_detection[5:]
+                class_id = np.argmax(scores)
+                confidence = scores[class_id]
 
-                if confidence>self.confidence_threshold and class_id==0: 
-                    center_x=int(obj_detection[0]*width)
-                    center_y=int(obj_detection[1]*height)
-                    w=int(obj_detection[2]*width)
-                    h=int(obj_detection[3]*height)
+                if confidence > self.confidence_threshold and class_id == 0:
+                    center_x = int(obj_detection[0] * width)
+                    center_y = int(obj_detection[1] * height)
+                    w = int(obj_detection[2] * width)
+                    h = int(obj_detection[3] * height)
 
-                    x=int(center_x-w/2)
-                    y=int(center_y-h/2)
+                    x = int(center_x - w / 2)
+                    y = int(center_y - h / 2)
 
-                    boxes.append([x,y,w,h])
+                    boxes.append([x, y, w, h])
                     confidences.append(float(confidence))
                     class_ids.append(class_id)
-        if len(boxes)>0:
+
+        if len(boxes) > 0:
             indices = cv2.dnn.NMSBoxes(
-    boxes,
-    confidences,
-    self.confidence_threshold,
-    0.4
-)
+                boxes,
+                confidences,
+                self.confidence_threshold,
+                0.4
+            )
 
-            if len(indices)>0:
+            if len(indices) > 0:
                 for i in indices.flatten():
-                    x,y,w,h=boxes[i]
+                    x, y, w, h = boxes[i]
 
-                    person_box=(x,y,x+w,y+h)
+                    person_box = (x, y, x + w, y + h)
 
-                    x_intersection=max(self.monitor_area[0],person_box[0])
-                    y_intersection=max(self.monitor_area[1],person_box[1])
-                    w_intersection=min(self.monitor_area[2],person_box[2])-x_intersection
-                    h_intersection = min(
-    self.monitor_area[3],
-    person_box[3]
-) - y_intersection
+                    x_intersection = max(self.monitor_area[0], person_box[0])
+                    y_intersection = max(self.monitor_area[1], person_box[1])
+                    w_intersection = min(self.monitor_area[2], person_box[2]) - x_intersection
+                    h_intersection = min(self.monitor_area[3], person_box[3]) - y_intersection
 
-                    is_in_desk_area=False
-                    if w_intersection>0 and h_intersection>0:
-                        intersection_area=w_intersection*h_intersection
-                        person_area=w*h
-                        overlap_ratio=intersection_area/person_area
+                    is_in_desk_area = False
+                    if w_intersection > 0 and h_intersection > 0:
+                        intersection_area = w_intersection * h_intersection
+                        person_area = w * h
+                        overlap_ratio = intersection_area / person_area
 
-                        if overlap_ratio>0.3:
-                            employee_detected=True
-                            is_in_desk_area=True
+                        if overlap_ratio > 0.3:
+                            employee_detected = True
+                            is_in_desk_area = True
 
                     if is_in_desk_area:
-                        cv2.rectangle(frame,(x,y),(x+w,y+h),(0,0,255),2)
-                        label=f"Employe: {confidences[i]:.2f}"
-                        cv2.putText(frame,label,(x,y-10),cv2.FONT_HERSHEY_SIMPLEX,0.5,(0,0,255),2)
+                        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
+                        label = f"Employe: {confidences[i]:.2f}"
+                        cv2.putText(frame, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
                     else:
-                        cv2.rectangle(frame,(x,y),(x+w,y+h),(255,0,0),2)
-                        label=f"Person:{confidences[i]:.2f}"
-                        cv2.putText(frame,label,(x,y-10),cv2.FONT_HERSHEY_SIMPLEX,0.5,(255,0,0),2)
-            cv2.rectangle(frame,(self.monitor_area[0],self.monitor_area[1]),(self.monitor_area[2],self.monitor_area[3]),(0,255,0),2)
+                        cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
+                        label = f"Person: {confidences[i]:.2f}"
+                        cv2.putText(frame, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
 
-            status_text= "Status: PRESENT" if employee_detected else "Status: ABSENT"
-            cv2.putText(frame, status_text, (10,30),cv2.FONT_HERSHEY_SIMPLEX,0.7,(0,255,0) if employee_detected else (0,0,255),2)
+        # --- Everything below now runs on EVERY frame, regardless of whether
+        # --- any person was detected. This is the fix: previously this block
+        # --- (including the return) was nested inside "if len(boxes) > 0:",
+        # --- so a person-free frame fell through with no return -> None ->
+        # --- crash in tracking_loop's unpacking -> thread silently died.
 
-            if not employee_detected and self.absence_start_time is not None:
-                absence_duration=time.time()-self.absence_start_time
-                duration_text=f"Absence: {absence_duration:.1f}s"
-                cv2.putText(frame,duration_text,(10,60),cv2.FONT_HERSHEY_SIMPLEX,0.7,(0,0,255),2)
+        cv2.rectangle(
+            frame,
+            (self.monitor_area[0], self.monitor_area[1]),
+            (self.monitor_area[2], self.monitor_area[3]),
+            (0, 255, 0), 2
+        )
 
-            timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            cv2.putText(frame,f"Time: {timestamp}",(10,90),cv2.FONT_HERSHEY_SIMPLEX,0.5,(255,255,255),1)
-            cv2.putText(frame,f"Source: {self.source_type}",(10,110),cv2.FONT_HERSHEY_SIMPLEX,0.5,(255,255,255),1)
+        status_text = "Status: PRESENT" if employee_detected else "Status: ABSENT"
+        cv2.putText(
+            frame, status_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
+            (0, 255, 0) if employee_detected else (0, 0, 255), 2
+        )
 
-            return frame ,employee_detected
+        if not employee_detected and self.absence_start_time is not None:
+            absence_duration = time.time() - self.absence_start_time
+            duration_text = f"Absence: {absence_duration:.1f}s"
+            cv2.putText(frame, duration_text, (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        cv2.putText(frame, f"Time: {timestamp}", (10, 90), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+        cv2.putText(frame, f"Source: {self.source_type}", (10, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+
+        return frame, employee_detected
 
     def open_camera(self):
         try:

@@ -477,16 +477,17 @@
     border-radius: var(--radius);
     background: #0b0d12;
     min-height: 420px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     overflow: hidden;
     border: 1px solid var(--border);
   }
 
   .video-feed {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
-    height: auto;
+    height: 100%;
+    object-fit: contain; /* remplit tout le cadre, plus de bande noire */
     display: block;
   }
 
@@ -559,11 +560,18 @@
   }
 
   .vf-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     color: #6b7280;
     text-align: center;
     font-family: var(--font-mono);
     font-size: 12.5px;
     padding: 20px;
+    z-index: 1;
   }
   .vf-placeholder i {
     font-size: 26px;
@@ -646,6 +654,14 @@
   }
   .card ::-webkit-scrollbar-thumb {
     background: var(--border-strong);
+  }
+  .video-frame:fullscreen {
+    min-height: 100vh;
+    border-radius: 0;
+    border: none;
+  }
+  .video-frame:fullscreen .video-feed {
+    object-fit: contain;
   }
 
   /* ---------- Responsive ---------- */
@@ -892,10 +908,13 @@
               class="video-feed"
               src="{{ url_for('video_feed') }}"
               alt="Video feed"
+              onload="
+                document.getElementById('vfPlaceholder').style.display = 'none';
+                this.style.display = 'block';
+              "
               onerror="
                 this.style.display = 'none';
-                document.getElementById('vfPlaceholder').style.display =
-                  'block';
+                document.getElementById('vfPlaceholder').style.display = 'flex';
               "
             />
             <div id="vfPlaceholder" class="vf-placeholder">
@@ -921,6 +940,9 @@
             <button id="captureBtn" class="btn btn-secondary">
               <i class="fas fa-camera me-2"></i>Capture frame
             </button>
+            <button id="fullscreenBtn" class="btn btn-secondary">
+              <i class="fas fa-expand me-2"></i>Full screen
+            </button>
           </div>
         </div>
       </div>
@@ -931,6 +953,24 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+  $("#fullscreenBtn").click(function () {
+    const frame = document.getElementById("videoFrame");
+    if (!document.fullscreenElement) {
+      frame.requestFullscreen().catch((err) => {
+        addLogEntry("Fullscreen not supported: " + err.message, "absent");
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  });
+
+  document.addEventListener("fullscreenchange", function () {
+    const icon = document.fullscreenElement ? "fa-compress" : "fa-expand";
+    const label = document.fullscreenElement
+      ? "Exit full screen"
+      : "Full screen";
+    $("#fullscreenBtn").html(`<i class="fas ${icon} me-2"></i>${label}`);
+  });
   $(document).ready(function () {
     // Update current time
     function updateTime() {
