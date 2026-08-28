@@ -1,6 +1,9 @@
 from flask import Flask, Response, render_template, request, jsonify, send_from_directory
 import json
 import os
+from dotenv import load_dotenv
+load_dotenv()
+
 
 from employee_tracking_fixed import EmployeeTracker
 

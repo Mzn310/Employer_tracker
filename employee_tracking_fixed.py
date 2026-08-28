@@ -8,6 +8,8 @@ import threading
 import queue
 import tempfile
 from werkzeug.utils import secure_filename
+import smtplib
+from email.mime.text import MIMEText
 
 
 class EmployeeTracker:
@@ -23,6 +25,13 @@ class EmployeeTracker:
         self.absence_logged=False
         self.last_present_time=None
         self.frames_processed=0
+        # Email alert config
+        self.smtp_server = os.environ.get("SMTP_SERVER", "smtp.gmail.com")
+        self.smtp_port = int(os.environ.get("SMTP_PORT", 587))
+        self.smtp_user = os.environ.get("SMTP_USER")          # your sending email
+        self.smtp_password = os.environ.get("SMTP_PASSWORD")   # app password, not raw password
+        self.alert_recipient = os.environ.get("ALERT_EMAIL")   # who gets notified
+        self.employee_name = os.environ.get("EMPLOYEE_NAME", "Employee")
 
         # config
         self.camera_source=0
@@ -430,6 +439,7 @@ class EmployeeTracker:
                         if absence_duration>= self.absence_threshold and not self.absence_logged:
                             self.log_event("Employee absence detected")
                             self.absence_logged=True
+                            self.send_absence_alert(absence_duration)
 
 
                 with self.lock:
@@ -595,3 +605,34 @@ class EmployeeTracker:
         except Exception as e:
             self.log_event(f"Error opening camera: {e}")
             return None
+
+    def send_absence_alert(self, duration):
+        """Send an email alert when absence exceeds threshold. Runs in its own thread."""
+        if not self.smtp_user or not self.smtp_password or not self.alert_recipient:
+            self.log_event("Absence alert skipped: email not configured")
+            return
+
+        def _send():
+            try:
+                subject = f"⚠️ Absence Alert: {self.employee_name}"
+                body = (
+                    f"{self.employee_name} has been away from their desk for "
+                    f"{duration:.0f} seconds, exceeding the {self.absence_threshold:.0f}s threshold.\n\n"
+                    f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+                )
+
+                msg = MIMEText(body)
+                msg["Subject"] = subject
+                msg["From"] = self.smtp_user
+                msg["To"] = self.alert_recipient
+
+                with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
+                    server.starttls()
+                    server.login(self.smtp_user, self.smtp_password)
+                    server.sendmail(self.smtp_user, [self.alert_recipient], msg.as_string())
+
+                self.log_event(f"Absence alert email sent to {self.alert_recipient}")
+            except Exception as e:
+                self.log_event(f"Failed to send absence alert email: {e}")
+
+        threading.Thread(target=_send, daemon=True).start()
